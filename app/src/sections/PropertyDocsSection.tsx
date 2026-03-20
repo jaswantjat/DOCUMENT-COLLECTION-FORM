@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { ArrowRight, ArrowLeft, FileText, Zap, CreditCard, CheckCircle, AlertTriangle, Edit2, RotateCcw, Info } from 'lucide-react';
+import { ArrowRight, ArrowLeft, FileText, Zap, CreditCard, CheckCircle, AlertTriangle, Edit2, RotateCcw, Info, Phone } from 'lucide-react';
 import type { IBIData, ElectricityBillData, DNIData, UploadedPhoto, AIExtraction, DocSlot, FormErrors } from '@/types';
 import { validatePhoto, createUploadedPhoto, fileToPreview, fileToBase64 } from '@/lib/photoValidation';
 import { extractDocument } from '@/services/api';

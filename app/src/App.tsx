@@ -4,7 +4,6 @@ import { BrowserRouter, Routes, Route, useSearchParams, useNavigate } from 'reac
 import { useProject } from '@/hooks/useProject';
 import { useFormState, getFormItems } from '@/hooks/useFormState';
 import { WelcomeSection } from '@/sections/WelcomeSection';
-import { PhoneSection } from '@/sections/PhoneSection';
 import { PropertyDocsSection } from '@/sections/PropertyDocsSection';
 import { PropertyPhotosSection } from '@/sections/PropertyPhotosSection';
 import { SignaturesSection } from '@/sections/SignaturesSection';
@@ -43,29 +42,29 @@ function FormApp() {
     getProgress, canSubmit, setErrors,
   } = useFormState(projectCode, project?.productType ?? 'solar');
 
+  // Always start on welcome (phone entry) regardless of URL params
   const [currentSection, setCurrentSection] = useState<Section>('welcome');
-
-  // If no code in URL, skip welcome and go to phone entry
-  useEffect(() => {
-    if (!urlCode) {
-      setCurrentSection('phone');
-    }
-  }, [urlCode]);
 
   const goTo = (section: Section) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setCurrentSection(section);
   };
 
-  // Called when phone lookup finds a project (no URL code case)
-  const handlePhoneFound = (phone: string, foundProject?: ProjectData) => {
+  // When phone lookup finds a project, set the code and update URL
+  const handlePhoneFound = (phone: string, foundProject: ProjectData) => {
     setPhone(phone);
-    if (foundProject) {
-      setProject(foundProject);
-      setProjectCode(foundProject.code);
-      // Update URL with code so user can bookmark/return
-      setSearchParams({ code: foundProject.code });
-    }
+    setProject(foundProject);
+    setProjectCode(foundProject.code);
+    // Set URL params so user can bookmark/return
+    setSearchParams({ code: foundProject.code });
+    // Move to property docs
+    goTo('property-docs');
+  };
+
+  // When project already loaded via URL code, just proceed
+  const handleContinueWithCode = (loadedProject: ProjectData) => {
+    setPhone(loadedProject.phone);
+    goTo('property-docs');
   };
 
   const handleSuccess = () => {
@@ -73,32 +72,25 @@ function FormApp() {
   };
 
   const renderSection = () => {
-    // Phone section doesn't need project loaded yet
-    if (currentSection === 'phone') {
+    // Always show welcome first (phone entry or confirmation)
+    if (currentSection === 'welcome') {
+      // If loading project from URL code, show loader
+      if (urlCode && loading) return <LoadingSection />;
+      // If URL code is invalid, still show welcome with no project (phone entry)
       return (
-        <PhoneSection
-          projectPhone={project?.phone}
-          initialPhone={formData.phone}
-          onPhoneConfirmed={handlePhoneFound}
-          onContinue={() => goTo(project || urlCode ? 'welcome' : 'property-docs')}
+        <WelcomeSection
+          project={project}
+          onPhoneFound={handlePhoneFound}
+          onContinueWithCode={handleContinueWithCode}
         />
       );
     }
 
+    // All other sections require project
     if (loading) return <LoadingSection />;
     if (error || !project) return <ErrorSection error={error || 'INVALID_CODE'} />;
 
     switch (currentSection) {
-      case 'welcome':
-        return (
-          <WelcomeSection
-            project={project}
-            completedCount={getProgress().completed}
-            totalCount={getProgress().total}
-            onContinue={() => goTo('property-docs')}
-          />
-        );
-
       case 'property-docs':
         return (
           <PropertyDocsSection
@@ -114,7 +106,7 @@ function FormApp() {
             onIBIExtractionChange={setIBIExtraction}
             onElectricityPhotoChange={setElectricityPhoto}
             onElectricityExtractionChange={setElectricityExtraction}
-            onBack={() => goTo(urlCode ? 'welcome' : 'phone')}
+            onBack={() => goTo('welcome')}
             onContinue={() => { if (validatePropertyDocs()) goTo('property-photos'); }}
           />
         );
@@ -171,7 +163,6 @@ function FormApp() {
   const showFooter =
     !loading && !error && project &&
     currentSection !== 'welcome' &&
-    currentSection !== 'phone' &&
     currentSection !== 'success' &&
     currentSection !== 'review';
 
