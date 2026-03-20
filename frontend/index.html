@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eltex - Documentación del Proyecto</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Loading State -->
+    <div id="loading" class="screen">
+      <div class="spinner"></div>
+      <p>Cargando tu proyecto...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error" class="screen hidden">
+      <div class="error-icon">⚠️</div>
+      <h2>Enlace no válido</h2>
+      <p id="error-message">Este enlace no es válido. Contacta con tu asesor de Eltex.</p>
+    </div>
+
+    <!-- Main Form -->
+    <div id="form" class="screen hidden">
+      <header class="form-header">
+        <div class="logo">ELTEX</div>
+        <h1>Documentación del Proyecto</h1>
+      </header>
+
+      <!-- Project Info -->
+      <section id="project-info" class="section">
+        <h2>Hola, <span id="customer-name">...</span></h2>
+        <p>Tu proyecto en <strong id="project-address">...</strong></p>
+        <p class="info-badge">Código: <span id="project-code">...</span></p>
+      </section>
+
+      <!-- Owner Check -->
+      <section id="owner-section" class="section">
+        <h3>¿Eres el propietario de esta vivienda?</h3>
+        <div id="owner-buttons" class="button-group">
+          <button class="btn btn-primary" onclick="setOwner(true)">Sí</button>
+          <button class="btn btn-secondary" onclick="setOwner(false)">No</button>
+        </div>
+        <div id="owner-info" class="owner-info hidden">
+          <p><strong>Respuesta:</strong> <span id="owner-answer">...</span></p>
+          <button class="btn btn-small" onclick="resetOwner()">Cambiar</button>
+        </div>
+        <div id="owner-fields" class="hidden">
+          <div class="form-group">
+            <label>Nombre completo del propietario *</label>
+            <input type="text" id="owner-name" placeholder="Nombre completo" required>
+          </div>
+          <div class="form-group">
+            <label>Teléfono del propietario *</label>
+            <input type="tel" id="owner-phone" placeholder="+34 612 345 678" required>
+            <span class="error-message" id="owner-phone-error"></span>
+          </div>
+          <div class="form-group">
+            <label>Relación con el propietario *</label>
+            <select id="owner-relation" required>
+              <option value="">Selecciona una opción</option>
+              <option value="conyuge">Cónyuge</option>
+              <option value="padre_madre">Padre/Madre</option>
+              <option value="hijo">Hijo/a</option>
+              <option value="arrendador">Arrendador/a</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- DNI Upload -->
+      <section id="dni-section" class="section">
+        <h3>Documentación de Identidad</h3>
+
+        <div class="upload-group">
+          <div class="upload-item" id="dni-front-item">
+            <label>Foto frontal del DNI *</label>
+            <div id="dni-front-preview" class="preview hidden">
+              <img id="dni-front-img" alt="DNI frontal">
+              <div class="preview-actions">
+                <button class="btn btn-small btn-secondary" onclick="retakePhoto('dni-front')">Repetir</button>
+                <button class="btn btn-small btn-primary" onclick="confirmPhoto('dni-front')">Aceptar</button>
+              </div>
+            </div>
+            <div id="dni-front-upload" class="upload-area">
+              <input type="file" id="dni-front-input" accept="image/*" capture="environment" hidden onchange="handleFileSelect('dni-front', event)">
+              <button class="btn btn-upload" onclick="document.getElementById('dni-front-input').click()">
+                <span class="camera-icon">📷</span>
+                <span>Fotografiar DNI frontal</span>
+              </button>
+            </div>
+            <span class="error-message" id="dni-front-error"></span>
+          </div>
+
+          <div class="upload-item" id="dni-back-item">
+            <label>Foto trasera del DNI *</label>
+            <div id="dni-back-preview" class="preview hidden">
+              <img id="dni-back-img" alt="DNI trasero">
+              <div class="preview-actions">
+                <button class="btn btn-small btn-secondary" onclick="retakePhoto('dni-back')">Repetir</button>
+                <button class="btn btn-small btn-primary" onclick="confirmPhoto('dni-back')">Aceptar</button>
+              </div>
+            </div>
+            <div id="dni-back-upload" class="upload-area">
+              <input type="file" id="dni-back-input" accept="image/*" capture="environment" hidden onchange="handleFileSelect('dni-back', event)">
+              <button class="btn btn-upload" onclick="document.getElementById('dni-back-input').click()">
+                <span class="camera-icon">📷</span>
+                <span>Fotografiar DNI trasero</span>
+              </button>
+            </div>
+            <span class="error-message" id="dni-back-error"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Electricity Bill -->
+      <section id="bill-section" class="section">
+        <h3>Factura de Luz</h3>
+        <div class="upload-item">
+          <label>Factura de luz *</label>
+          <p class="helper-text">Puedes hacer una foto del papel o subir el PDF que recibes por email.</p>
+          <div id="bill-preview" class="preview hidden">
+            <img id="bill-img" alt="Factura de luz">
+            <div class="preview-actions">
+              <button class="btn btn-small btn-secondary" onclick="retakePhoto('bill')">Repetir</button>
+              <button class="btn btn-small btn-primary" onclick="confirmPhoto('bill')">Aceptar</button>
+            </div>
+          </div>
+          <div id="bill-upload" class="upload-area">
+            <input type="file" id="bill-input" accept="image/*,.pdf" capture="environment" hidden onchange="handleFileSelect('bill', event)">
+            <button class="btn btn-upload" onclick="document.getElementById('bill-input').click()">
+              <span class="camera-icon">📷</span>
+              <span>Fotografiar o subir factura</span>
+            </button>
+          </div>
+          <span class="error-message" id="bill-error"></span>
+        </div>
+      </section>
+
+      <!-- IBAN -->
+      <section id="iban-section" class="section">
+        <h3>IBAN</h3>
+        <div class="form-group">
+          <label>IBAN español *</label>
+          <input
+            type="text"
+            id="iban-input"
+            placeholder="ES00 0000 0000 0000 0000 0000"
+            maxlength="28"
+            oninput="formatIBAN(this)"
+          >
+          <span class="error-message" id="iban-error"></span>
+        </div>
+      </section>
+
+      <!-- IBI (Optional) -->
+      <section id="ibi-section" class="section optional">
+        <h3>Recibo del IBI <span class="optional-tag">Opcional</span></h3>
+        <p class="helper-text">Lo necesitaremos más adelante para solicitar tus bonificaciones. Si no lo tienes ahora, puedes añadirlo después.</p>
+        <div class="upload-item">
+          <label>Recibo del IBI</label>
+          <div id="ibi-preview" class="preview hidden">
+            <img id="ibi-img" alt="Recibo IBI">
+            <div class="preview-actions">
+              <button class="btn btn-small btn-secondary" onclick="retakePhoto('ibi')">Repetir</button>
+              <button class="btn btn-small btn-primary" onclick="confirmPhoto('ibi')">Aceptar</button>
+            </div>
+          </div>
+          <div id="ibi-upload" class="upload-area">
+            <input type="file" id="ibi-input" accept="image/*,.pdf" capture="environment" hidden onchange="handleFileSelect('ibi', event)">
+            <button class="btn btn-upload" onclick="document.getElementById('ibi-input').click()">
+              <span class="camera-icon">📷</span>
+              <span>Fotografiar o subir IBI</span>
+            </button>
+          </div>
+          <span class="error-message" id="ibi-error"></span>
+        </div>
+      </section>
+
+      <!-- Submit Section -->
+      <section id="submit-section" class="section">
+        <div id="validation-errors" class="validation-errors hidden"></div>
+        <button id="submit-btn" class="btn btn-primary btn-large" onclick="submitForm()">
+          Enviar Documentación
+        </button>
+        <button id="submit-partial-btn" class="btn btn-secondary btn-large hidden" onclick="submitPartial()">
+          Enviar lo que tengo ahora
+        </button>
+      </section>
+    </div>
+
+    <!-- Success Screen -->
+    <div id="success" class="screen hidden">
+      <div class="success-icon">✅</div>
+      <h2>¡Gracias!</h2>
+      <p>Hemos recibido tus documentos.</p>
+      <div id="success-summary" class="success-summary"></div>
+      <div id="missing-docs" class="missing-docs hidden">
+        <p>Puedes volver a este enlace en cualquier momento para añadir los documentos que faltan.</p>
+      </div>
+      <button class="btn btn-primary" onclick="window.location.reload()">
+        Volver al formulario
+      </button>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="error-modal" class="modal hidden">
+      <div class="modal-content">
+        <h3>Error</h3>
+        <p id="modal-message"></p>
+        <button class="btn btn-primary" onclick="closeErrorModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
