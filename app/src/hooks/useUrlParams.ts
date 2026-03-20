@@ -1,25 +1,23 @@
 import { useState, useEffect } from 'react';
 
-interface UrlParams {
-  projectCode: string | null;
-  source: 'customer' | 'assessor';
-}
-
-export const useUrlParams = (): UrlParams => {
-  const [params, setParams] = useState<UrlParams>({
+export const useUrlParams = () => {
+  const [params, setParams] = useState<{
+    projectCode: string | null;
+    source: 'customer' | 'assessor';
+  }>({
     projectCode: null,
-    source: 'customer'
+    source: 'customer',
   });
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    
-    const projectCode = searchParams.get('project');
-    const source = searchParams.get('source') as 'customer' | 'assessor';
-    
+    const sp = new URLSearchParams(window.location.search);
+    // Support both ?code= and ?project= for backwards compat
+    const projectCode = sp.get('code') || sp.get('project');
+    const source = sp.get('source') as 'customer' | 'assessor';
+
     setParams({
       projectCode,
-      source: source === 'assessor' ? 'assessor' : 'customer'
+      source: source === 'assessor' ? 'assessor' : 'customer',
     });
   }, []);
 

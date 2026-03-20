@@ -1,50 +1,33 @@
 import { useState, useEffect } from 'react';
-import type { ProjectData, BackOfficeResponse } from '@/types';
-import { getProjectData } from '@/services/backOffice';
+import type { ProjectData } from '@/types';
+import { fetchProject } from '@/services/api';
 
-interface UseProjectReturn {
-  project: ProjectData | null;
-  loading: boolean;
-  error: string | null;
-}
-
-export const useProject = (projectCode: string | null): UseProjectReturn => {
+export const useProject = (projectCode: string | null) => {
   const [project, setProject] = useState<ProjectData | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchProject = async () => {
-      if (!projectCode) {
-        setError('INVALID_CODE');
-        setLoading(false);
-        return;
-      }
+    if (!projectCode) {
+      setError('INVALID_CODE');
+      setLoading(false);
+      return;
+    }
 
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
 
-      try {
-        const response: BackOfficeResponse = await getProjectData(projectCode);
-        
-        if (response.success && response.project) {
-          setProject(response.project);
+    fetchProject(projectCode)
+      .then(res => {
+        if (res.success && res.project) {
+          setProject(res.project);
         } else {
-          setError(response.error || 'UNKNOWN_ERROR');
+          setError(res.error || 'UNKNOWN_ERROR');
         }
-      } catch (err) {
-        setError('NETWORK_ERROR');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProject();
+      })
+      .catch(() => setError('NETWORK_ERROR'))
+      .finally(() => setLoading(false));
   }, [projectCode]);
 
-  return {
-    project,
-    loading,
-    error
-  };
+  return { project, loading, error };
 };

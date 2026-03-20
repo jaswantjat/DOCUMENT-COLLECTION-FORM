@@ -1,149 +1,142 @@
-// Types for Eltex Document Collection Form - Modern SaaS Theme
+// Eltex Document Collection Form - Types
+
+export type ProductType = 'solar' | 'aerothermal';
 
 export interface ProjectData {
-  projectCode: string;
+  code: string;
   customerName: string;
-  address: string;
-  phone: string;
-  region: string;
-  productType: string;
-  assessor: string;
-}
-
-export interface UploadedFile {
-  file: File;
-  preview: string;
-  timestamp: number;
-}
-
-export interface DocumentStatus {
-  dniFront: 'missing' | 'received' | 'pending';
-  dniBack: 'missing' | 'received' | 'pending';
-  bill: 'missing' | 'received' | 'pending';
-  ibi: 'missing' | 'received' | 'pending';
-  iban: 'missing' | 'received' | 'pending';
-  auth: 'missing' | 'signed' | 'pending';
-}
-
-export interface OwnerData {
-  name: string;
-  phone: string;
-  relation: string;
-}
-
-export interface CompanyData {
-  name: string;
-  nif: string;
-  address: string;
-  city: string;
-  postalCode: string;
-}
-
-export interface PersonalData {
-  fullName: string;
-  dni: string;
-  address: string;
-  postalCode: string;
-  city: string;
-  province: string;
   phone: string;
   email: string;
-  comments?: string;
+  productType: ProductType;
+  assessor: string;
+  assessorId: string;
+  formData: FormData | null;
+  lastActivity: string | null;
+  createdAt: string;
 }
 
-export type Location = 'catalonia' | 'madrid' | 'valencia';
-
-export interface FormData {
-  // Location
-  location: Location;
-  isCompany: boolean;
-  companyData: CompanyData;
-
-  // Personal data
-  personalData: PersonalData;
-
-  // Owner verification
-  isOwner: boolean | null;
-  ownerData: OwnerData;
-
-  // Documents
-  dniFront: UploadedFile | null;
-  dniBack: UploadedFile | null;
-  bill: UploadedFile | null;
-  ibi: UploadedFile | null;
-
-  // IBAN
-  iban: string;
-
-  // Signatures
-  vatSignature: string | null;
-  authSignature: string | null;
-
-  // Metadata
-  fechaFirma: string;
-  lugarFirma: string;
+// Section 1: Customer Identity
+export interface CustomerIdentity {
+  fullName: string;
+  dni: string; // DNI/NIE
+  phone: string;
+  email: string;
+  street: string;
+  number: string;
+  floor: string;
+  door: string;
+  postalCode: string;
+  municipality: string;
+  province: string;
 }
 
-export interface SubmissionData {
-  projectCode: string;
+// Section 2: Property Documentation
+export interface UploadedPhoto {
+  id: string;
+  file?: File;
+  preview: string; // data URL or server URL
   timestamp: number;
-  ipAddress: string;
-  source: 'customer' | 'assessor';
-  formData: FormData;
-  documentStatus: DocumentStatus;
+  sizeBytes: number;
+  width?: number;
+  height?: number;
 }
 
-export interface BackOfficeResponse {
-  success: boolean;
-  project?: ProjectData;
-  documentStatus?: DocumentStatus;
-  error?: string;
+export interface AIExtraction {
+  extractedData: Record<string, any>;
+  confidence: number;
+  isCorrectDocument: boolean;
+  documentTypeDetected: string;
+  needsManualReview: boolean;
+  confirmedByUser: boolean;
+  manualCorrections?: Record<string, string>;
+}
+
+export interface IBIData {
+  photo: UploadedPhoto | null;
+  extraction: AIExtraction | null;
+}
+
+export interface ElectricityBillData {
+  photo: UploadedPhoto | null;
+  extraction: AIExtraction | null;
+}
+
+// Section 3: Property Photos
+export interface PhotoSlot {
+  photos: UploadedPhoto[];
+  minRequired: number;
+}
+
+export interface ElectricalPanelData {
+  photos: UploadedPhoto[];
+}
+
+export interface InstallationSpaceData {
+  photos: UploadedPhoto[];
+  widthCm: string;
+  depthCm: string;
+  heightCm: string;
+}
+
+export interface RoofData {
+  photos: UploadedPhoto[];
+  lengthM: string;
+  widthM: string;
+  roofType: '' | 'flat' | 'tiled' | 'metal' | 'other';
+  orientation: '' | 'north' | 'south' | 'east' | 'west' | 'mixed';
+}
+
+export interface RadiatorData {
+  photos: UploadedPhoto[];
+  radiatorType: '' | 'iron' | 'aluminium' | 'underfloor' | 'mixed';
+  totalCount: string;
+  heatingZones: string;
+}
+
+// Section 4: Signatures
+export interface SignatureData {
+  customerSignature: string | null; // base64 PNG
+  repSignature: string | null; // base64 PNG
+}
+
+// Full form data
+export interface FormData {
+  identity: CustomerIdentity;
+  ibi: IBIData;
+  electricityBill: ElectricityBillData;
+  electricalPanel: ElectricalPanelData;
+  installationSpace: InstallationSpaceData;
+  roof: RoofData;
+  radiators: RadiatorData;
+  signatures: SignatureData;
+}
+
+// Form completion tracking
+export interface FormItem {
+  id: string;
+  label: string;
+  section: Section;
+  required: boolean;
+  isComplete: (formData: FormData, productType: ProductType) => boolean;
 }
 
 export type Section =
   | 'welcome'
-  | 'location'
-  | 'personal'
-  | 'owner'
-  | 'dni'
-  | 'bill'
-  | 'ibi'
-  | 'iban'
-  | 'vat'
-  | 'auth'
+  | 'identity'
+  | 'property-docs'
+  | 'property-photos'
+  | 'signatures'
   | 'review'
   | 'success';
 
 export interface FormErrors {
-  location?: string;
-  'companyData.name'?: string;
-  'companyData.nif'?: string;
-  'companyData.address'?: string;
-  'companyData.city'?: string;
-  'companyData.postalCode'?: string;
-  'personalData.fullName'?: string;
-  'personalData.dni'?: string;
-  'personalData.address'?: string;
-  'personalData.postalCode'?: string;
-  'personalData.city'?: string;
-  'personalData.province'?: string;
-  'personalData.phone'?: string;
-  'personalData.email'?: string;
-  isOwner?: string;
-  'ownerData.name'?: string;
-  'ownerData.phone'?: string;
-  'ownerData.relation'?: string;
-  dniFront?: string;
-  dniBack?: string;
-  bill?: string;
-  ibi?: string;
-  iban?: string;
-  vatSignature?: string;
-  authSignature?: string;
+  [key: string]: string | undefined;
 }
 
-export interface StoredFormData {
-  version: string;
-  timestamp: number;
-  currentSection?: string;
-}
+export type PhotoValidationResult = {
+  valid: boolean;
+  error?: string;
+  width?: number;
+  height?: number;
+  sizeBytes?: number;
+};
