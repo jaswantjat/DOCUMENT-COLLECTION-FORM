@@ -9,6 +9,7 @@ interface Props {
   ibi: IBIData;
   electricityBill: ElectricityBillData;
   errors: FormErrors;
+  customerPhone?: string;
   onDNIFrontPhotoChange: (photo: UploadedPhoto | null) => void;
   onDNIFrontExtractionChange: (extraction: AIExtraction | null) => void;
   onDNIBackPhotoChange: (photo: UploadedPhoto | null) => void;
@@ -334,6 +335,7 @@ function SectionLabel({ label }: { label: string }) {
 // ── Main ───────────────────────────────────────────────────────────────────────
 export function PropertyDocsSection({
   dni, ibi, electricityBill, errors,
+  customerPhone,
   onDNIFrontPhotoChange, onDNIFrontExtractionChange,
   onDNIBackPhotoChange, onDNIBackExtractionChange,
   onIBIPhotoChange, onIBIExtractionChange,
@@ -346,14 +348,22 @@ export function PropertyDocsSection({
 
         {/* Header */}
         <div className="form-card p-6">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-8 h-8 rounded-full bg-eltex-blue-light flex items-center justify-center">
-              <FileText className="w-4 h-4 text-eltex-blue" />
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-eltex-blue-light flex items-center justify-center">
+                <FileText className="w-4 h-4 text-eltex-blue" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Documentación</h2>
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Documentación</h2>
+            {customerPhone && (
+              <span className="flex items-center gap-1.5 text-sm text-gray-500 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-full">
+                <Phone className="w-3.5 h-3.5 text-eltex-blue shrink-0" />
+                {customerPhone}
+              </span>
+            )}
           </div>
           <p className="text-sm text-gray-500 ml-11">
-            Opcional — sube los que tengas ahora. La IA extrae los datos automáticamente.
+            Sube los documentos que tengas. La IA extrae los datos automáticamente.
           </p>
         </div>
 

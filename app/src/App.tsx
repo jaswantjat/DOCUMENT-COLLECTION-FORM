@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { BrowserRouter, Routes, Route, useSearchParams, useNavigate } from 'react-router-dom';
 import { useProject } from '@/hooks/useProject';
-import { useFormState, getFormItems } from '@/hooks/useFormState';
+import { useFormState } from '@/hooks/useFormState';
 import { WelcomeSection } from '@/sections/WelcomeSection';
 import { PropertyDocsSection } from '@/sections/PropertyDocsSection';
 import { PropertyPhotosSection } from '@/sections/PropertyPhotosSection';
@@ -98,6 +98,7 @@ function FormApp() {
             ibi={formData.ibi}
             electricityBill={formData.electricityBill}
             errors={errors}
+            customerPhone={formData.phone || project?.phone}
             onDNIFrontPhotoChange={setDNIFrontPhoto}
             onDNIFrontExtractionChange={setDNIFrontExtraction}
             onDNIBackPhotoChange={setDNIBackPhoto}
