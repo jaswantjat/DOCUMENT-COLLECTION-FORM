@@ -61,7 +61,6 @@ function MultiPhotoUploader({ photos, minRequired, maxPhotos = 6, label, hint, o
   };
 
   const canAdd = photos.length < maxPhotos;
-  const meetsMin = photos.length >= minRequired;
 
   return (
     <div className="space-y-3">
@@ -70,9 +69,11 @@ function MultiPhotoUploader({ photos, minRequired, maxPhotos = 6, label, hint, o
           <p className="text-sm font-semibold text-gray-800">{label}</p>
           <p className="text-xs text-gray-500 mt-0.5">{hint}</p>
         </div>
-        <div className={`text-xs font-medium px-2.5 py-1 rounded-full ${meetsMin ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'}`}>
-          {photos.length} / {minRequired}+
-        </div>
+        {photos.length > 0 && (
+          <div className="text-xs font-medium px-2.5 py-1 rounded-full bg-green-50 text-green-700">
+            {photos.length} foto{photos.length !== 1 ? 's' : ''}
+          </div>
+        )}
       </div>
 
       {/* Photo grid */}
@@ -118,7 +119,7 @@ function MultiPhotoUploader({ photos, minRequired, maxPhotos = 6, label, hint, o
               <p className="text-sm text-gray-600">
                 {photos.length === 0 ? 'Añadir fotos' : 'Añadir más'}
               </p>
-              <p className="text-xs text-gray-400 mt-1">JPG, PNG · Mín. 1MB · Mín. 1200×900px</p>
+              <p className="text-xs text-gray-400 mt-1">JPG o PNG · Máx. 20MB</p>
             </>
           )}
         </label>
@@ -253,7 +254,7 @@ export function PropertyPhotosSection({
         <SectionCard
           icon={<Zap className="w-4 h-4 text-eltex-blue" />}
           title="Cuadro eléctrico"
-          subtitle="Foto del cuadro de fusibles / ICP. Mínimo 2 fotos."
+          subtitle="Foto del cuadro de fusibles / ICP (opcional)."
         >
           <MultiPhotoUploader
             photos={formData.electricalPanel.photos}
@@ -269,7 +270,7 @@ export function PropertyPhotosSection({
           <SectionCard
             icon={<Sun className="w-4 h-4 text-eltex-blue" />}
             title="Tejado"
-            subtitle="Fotos y dimensiones del tejado. Mínimo 2 fotos."
+            subtitle="Fotos y dimensiones del tejado (opcional)."
           >
             <MultiPhotoUploader
               photos={formData.roof.photos}
@@ -326,7 +327,7 @@ export function PropertyPhotosSection({
             <SectionCard
               icon={<Home className="w-4 h-4 text-eltex-blue" />}
               title="Espacio de instalación"
-              subtitle="Dónde se instalará la bomba de calor. Mínimo 2 fotos."
+              subtitle="Dónde se instalará la bomba de calor (opcional)."
             >
               <MultiPhotoUploader
                 photos={formData.installationSpace.photos}
@@ -364,7 +365,7 @@ export function PropertyPhotosSection({
             <SectionCard
               icon={<Thermometer className="w-4 h-4 text-eltex-blue" />}
               title="Radiadores"
-              subtitle="Fotos y datos del sistema de calefacción actual. Mínimo 1 foto."
+              subtitle="Fotos y datos del sistema de calefacción actual (opcional)."
             >
               <MultiPhotoUploader
                 photos={formData.radiators.photos}

@@ -182,7 +182,7 @@ function DocUpload({ label, subtitle, icon, data, documentType, error, exampleNo
           <input type="file" accept="image/jpeg,image/png,application/pdf" className="hidden" onChange={handleInput} />
           <FileText className="w-8 h-8 mx-auto text-gray-400 mb-2" />
           <p className="text-sm text-gray-600">Arrastra o <span className="text-eltex-blue font-medium">pulsa para subir</span></p>
-          <p className="text-xs text-gray-400 mt-1">JPG, PNG, PDF · Mín. 1MB · Mín. 1200×900px</p>
+          <p className="text-xs text-gray-400 mt-1">JPG, PNG o PDF · Máx. 20MB</p>
         </label>
       )}
 
@@ -346,7 +346,7 @@ export function PropertyDocsSection({ ibi, electricityBill, errors, onIBIPhotoCh
             </div>
             <h2 className="text-xl font-bold text-gray-900">Documentación del inmueble</h2>
           </div>
-          <p className="text-sm text-gray-500 ml-11">La IA extrae los datos automáticamente para que solo tengas que confirmarlos.</p>
+          <p className="text-sm text-gray-500 ml-11">Opcional — súbelos ahora o más tarde. La IA extrae los datos automáticamente.</p>
         </div>
 
         <DocUpload
@@ -368,13 +368,13 @@ export function PropertyDocsSection({ ibi, electricityBill, errors, onIBIPhotoCh
           data={electricityBill}
           documentType="electricity"
           error={errors['electricity.photo']}
-          exampleNote="Sube una foto de la factura de luz donde se vean claramente: el CUPS (código que empieza por 'ES', 20-22 caracteres), la potencia contratada en kW, y si la instalación es monofásica o trifásica. Si no tienes la factura ahora, puedes subir esta parte más tarde."
+          exampleNote="Sube una foto de la factura de luz donde se vean claramente: el CUPS (código que empieza por 'ES', 20-22 caracteres), la potencia contratada en kW, y si la instalación es monofásica o trifásica."
           onPhotoChange={onElectricityPhotoChange}
           onExtractionChange={onElectricityExtractionChange}
         />
 
         <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-xs text-blue-700">
-          <strong>¿No tienes la factura ahora?</strong> Puedes continuar y añadirla más tarde usando el mismo enlace. La factura de luz es obligatoria para completar el expediente.
+          <strong>¿No tienes los documentos ahora?</strong> No hay problema — puedes continuar sin subirlos y añadirlos más tarde usando el mismo enlace.
         </div>
 
         <div className="grid grid-cols-2 gap-3">

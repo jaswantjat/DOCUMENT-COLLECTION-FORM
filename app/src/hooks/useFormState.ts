@@ -47,22 +47,22 @@ export function getFormItems(productType: ProductType): FormItem[] {
       id: 'ibi',
       label: 'IBI / Escritura',
       section: 'property-docs',
-      required: true,
-      isComplete: (fd) => !!(fd.ibi.photo && fd.ibi.extraction?.confirmedByUser),
+      required: false,
+      isComplete: (fd) => !!(fd.ibi.photo),
     },
     {
       id: 'electricity',
       label: 'Factura de luz',
       section: 'property-docs',
-      required: true,
-      isComplete: (fd) => !!(fd.electricityBill.photo && fd.electricityBill.extraction?.confirmedByUser),
+      required: false,
+      isComplete: (fd) => !!(fd.electricityBill.photo),
     },
     {
       id: 'electricalPanel',
       label: 'Cuadro eléctrico',
       section: 'property-photos',
-      required: true,
-      isComplete: (fd) => fd.electricalPanel.photos.length >= 2,
+      required: false,
+      isComplete: (fd) => fd.electricalPanel.photos.length >= 1,
     },
   ];
 
@@ -72,15 +72,15 @@ export function getFormItems(productType: ProductType): FormItem[] {
         id: 'installationSpace',
         label: 'Espacio de instalación',
         section: 'property-photos',
-        required: true,
-        isComplete: (fd) => fd.installationSpace.photos.length >= 2 && !!(fd.installationSpace.widthCm && fd.installationSpace.depthCm && fd.installationSpace.heightCm),
+        required: false,
+        isComplete: (fd) => fd.installationSpace.photos.length >= 1,
       },
       {
         id: 'radiators',
         label: 'Radiadores',
         section: 'property-photos',
-        required: true,
-        isComplete: (fd) => fd.radiators.photos.length >= 1 && !!(fd.radiators.radiatorType && fd.radiators.totalCount && fd.radiators.heatingZones),
+        required: false,
+        isComplete: (fd) => fd.radiators.photos.length >= 1,
       },
     );
   }
@@ -90,8 +90,8 @@ export function getFormItems(productType: ProductType): FormItem[] {
       id: 'roof',
       label: 'Tejado',
       section: 'property-photos',
-      required: true,
-      isComplete: (fd) => fd.roof.photos.length >= 2 && !!(fd.roof.roofType && fd.roof.orientation && fd.roof.lengthM && fd.roof.widthM),
+      required: false,
+      isComplete: (fd) => fd.roof.photos.length >= 1,
     });
   }
 
@@ -244,12 +244,10 @@ export const useFormState = (projectCode: string | null, productType: ProductTyp
   }, [formData.identity]);
 
   const validatePropertyDocs = useCallback((): boolean => {
-    const e: FormErrors = {};
-    if (!formData.ibi.photo) e['ibi.photo'] = 'Sube la foto del IBI o escritura';
-    if (!formData.electricityBill.photo) e['electricity.photo'] = 'Sube la factura de electricidad';
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  }, [formData.ibi, formData.electricityBill]);
+    // Documents are optional — always allow continuing
+    setErrors({});
+    return true;
+  }, []);
 
   const validateSignatures = useCallback((): boolean => {
     const e: FormErrors = {};

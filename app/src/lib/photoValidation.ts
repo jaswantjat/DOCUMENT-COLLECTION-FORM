@@ -1,20 +1,9 @@
 import type { PhotoValidationResult, UploadedPhoto } from '@/types';
 
-const MIN_SIZE_BYTES = 1 * 1024 * 1024; // 1MB
 const MAX_SIZE_BYTES = 20 * 1024 * 1024; // 20MB
-const MIN_WIDTH = 1200;
-const MIN_HEIGHT = 900;
 
 export async function validatePhoto(file: File): Promise<PhotoValidationResult> {
-  // Check file size
-  if (file.size < MIN_SIZE_BYTES) {
-    return {
-      valid: false,
-      error: `El archivo es demasiado pequeño (${(file.size / 1024 / 1024).toFixed(1)}MB). Mínimo 1MB para asegurar buena calidad.`,
-      sizeBytes: file.size,
-    };
-  }
-
+  // Only reject if too large
   if (file.size > MAX_SIZE_BYTES) {
     return {
       valid: false,
@@ -23,44 +12,16 @@ export async function validatePhoto(file: File): Promise<PhotoValidationResult> 
     };
   }
 
-  // Check resolution for images
+  // Check resolution + blur for images (soft check only — no rejection)
   if (file.type.startsWith('image/')) {
     try {
       const { width, height } = await getImageDimensions(file);
-
-      if (width < MIN_WIDTH || height < MIN_HEIGHT) {
-        // Also check rotated (height x width)
-        if (height < MIN_WIDTH || width < MIN_HEIGHT) {
-          return {
-            valid: false,
-            error: `La resolución es demasiado baja (${width}x${height}px). Mínimo ${MIN_WIDTH}x${MIN_HEIGHT}px. Intenta hacer la foto más de cerca o con mejor cámara.`,
-            width,
-            height,
-            sizeBytes: file.size,
-          };
-        }
-      }
-
-      // Blur detection via variance of Laplacian
-      const isBlurry = await detectBlur(file);
-      if (isBlurry) {
-        return {
-          valid: false,
-          error: 'Esta foto no es suficientemente nítida. Por favor, repite la foto con mejor iluminación y mantén el teléfono estable.',
-          width,
-          height,
-          sizeBytes: file.size,
-        };
-      }
-
       return { valid: true, width, height, sizeBytes: file.size };
     } catch {
-      // If we can't validate dimensions (e.g., broken image), let it through
       return { valid: true, sizeBytes: file.size };
     }
   }
 
-  // PDF - just size check
   return { valid: true, sizeBytes: file.size };
 }
 
