@@ -4,6 +4,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const fs = require('fs');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
 const PORT = 3001;
@@ -271,6 +272,14 @@ app.post('/api/extract', async (req, res) => {
     res.json({ success: true, extraction: null, needsManualReview: true, message: 'Error en el análisis. Se revisará manualmente.' });
   }
 });
+
+// Proxy all non-API requests to Vite dev server on port 5173
+app.use('/', createProxyMiddleware({
+  target: 'http://localhost:5173',
+  changeOrigin: true,
+  ws: true,
+  logLevel: 'silent',
+}));
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

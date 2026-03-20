@@ -1,7 +1,7 @@
 {
   "startupCommands": [
-    "cd /home/user/app/backend && npm install; node server.js",
-    "cd /home/user/app/app && npm install; npx vite --port 5173 --host"
+    "cd /home/user/app/app && npm install; npx vite --port 5173 --host",
+    "cd /home/user/app/backend && npm install; node server.js"
   ],
   "projectId": "a41c86b8-f46c-4098-aaab-8b15eb2546f8",
   "templateId": "any"
