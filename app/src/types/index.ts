@@ -15,26 +15,10 @@ export interface ProjectData {
   createdAt: string;
 }
 
-// Section 1: Customer Identity
-export interface CustomerIdentity {
-  fullName: string;
-  dni: string; // DNI/NIE
-  phone: string;
-  email: string;
-  street: string;
-  number: string;
-  floor: string;
-  door: string;
-  postalCode: string;
-  municipality: string;
-  province: string;
-}
-
-// Section 2: Property Documentation
 export interface UploadedPhoto {
   id: string;
   file?: File;
-  preview: string; // data URL or server URL
+  preview: string;
   timestamp: number;
   sizeBytes: number;
   width?: number;
@@ -51,6 +35,16 @@ export interface AIExtraction {
   manualCorrections?: Record<string, string>;
 }
 
+export interface DocSlot {
+  photo: UploadedPhoto | null;
+  extraction: AIExtraction | null;
+}
+
+export interface DNIData {
+  front: DocSlot;
+  back: DocSlot;
+}
+
 export interface IBIData {
   photo: UploadedPhoto | null;
   extraction: AIExtraction | null;
@@ -59,12 +53,6 @@ export interface IBIData {
 export interface ElectricityBillData {
   photo: UploadedPhoto | null;
   extraction: AIExtraction | null;
-}
-
-// Section 3: Property Photos
-export interface PhotoSlot {
-  photos: UploadedPhoto[];
-  minRequired: number;
 }
 
 export interface ElectricalPanelData {
@@ -93,15 +81,14 @@ export interface RadiatorData {
   heatingZones: string;
 }
 
-// Section 4: Signatures
 export interface SignatureData {
-  customerSignature: string | null; // base64 PNG
-  repSignature: string | null; // base64 PNG
+  customerSignature: string | null;
+  repSignature: string | null;
 }
 
-// Full form data
 export interface FormData {
-  identity: CustomerIdentity;
+  phone: string;
+  dni: DNIData;
   ibi: IBIData;
   electricityBill: ElectricityBillData;
   electricalPanel: ElectricalPanelData;
@@ -111,7 +98,6 @@ export interface FormData {
   signatures: SignatureData;
 }
 
-// Form completion tracking
 export interface FormItem {
   id: string;
   label: string;
@@ -122,7 +108,7 @@ export interface FormItem {
 
 export type Section =
   | 'welcome'
-  | 'identity'
+  | 'phone'
   | 'property-docs'
   | 'property-photos'
   | 'signatures'

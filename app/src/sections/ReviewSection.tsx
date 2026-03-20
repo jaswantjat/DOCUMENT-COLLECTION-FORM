@@ -91,7 +91,12 @@ export function ReviewSection({
     }
   };
 
-  const { identity, ibi, electricityBill, electricalPanel, roof, installationSpace, radiators, signatures } = formData;
+  const { dni, ibi, electricityBill, electricalPanel, roof, installationSpace, radiators, signatures } = formData;
+  const dniName = dni.front.extraction?.extractedData?.fullName;
+  const dniNumber = dni.front.extraction?.extractedData?.dniNumber;
+  const dniAddress = dni.back.extraction?.extractedData?.address
+    ? `${dni.back.extraction.extractedData.address}, ${dni.back.extraction.extractedData.municipality || ''}`
+    : null;
 
   return (
     <div className="min-h-screen p-4 pb-10">
@@ -136,22 +141,28 @@ export function ReviewSection({
           </div>
         )}
 
-        {/* Personal data */}
-        <ReviewGroup title="Datos personales">
-          <ReviewItem label="Nombre completo" value={identity.fullName} section="identity" onEdit={onEdit} />
-          <ReviewItem label="DNI / NIE" value={identity.dni} section="identity" onEdit={onEdit} />
-          <ReviewItem label="Teléfono" value={identity.phone} section="identity" onEdit={onEdit} />
-          <ReviewItem label="Email" value={identity.email} section="identity" onEdit={onEdit} />
-          <ReviewItem
-            label="Dirección"
-            value={identity.street ? `${identity.street} ${identity.number}${identity.floor ? `, ${identity.floor}` : ''}${identity.door ? ` ${identity.door}` : ''}, ${identity.postalCode} ${identity.municipality} (${identity.province})` : null}
-            section="identity"
-            onEdit={onEdit}
-          />
+        {/* Contact */}
+        <ReviewGroup title="Datos de contacto">
+          <ReviewItem label="Teléfono" value={formData.phone || project.phone} section="phone" onEdit={onEdit} />
+          <ReviewItem label="Nombre (del DNI)" value={dniName || project.customerName} section="property-docs" onEdit={onEdit} />
+          <ReviewItem label="DNI / NIE" value={dniNumber || null} section="property-docs" onEdit={onEdit} />
+          <ReviewItem label="Domicilio" value={dniAddress} section="property-docs" onEdit={onEdit} />
         </ReviewGroup>
 
         {/* Documents */}
         <ReviewGroup title="Documentación del inmueble">
+          <ReviewItem
+            label="DNI — Frontal"
+            value={dni.front.photo ? (dni.front.extraction?.confirmedByUser ? 'Confirmado' : 'Subido') : null}
+            section="property-docs"
+            onEdit={onEdit}
+          />
+          <ReviewItem
+            label="DNI — Trasero"
+            value={dni.back.photo ? (dni.back.extraction?.confirmedByUser ? 'Confirmado' : 'Subido') : null}
+            section="property-docs"
+            onEdit={onEdit}
+          />
           <ReviewItem
             label="IBI / Escritura"
             value={ibi.extraction?.confirmedByUser

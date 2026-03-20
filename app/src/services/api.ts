@@ -7,6 +7,16 @@ export async function fetchProject(code: string): Promise<{ success: boolean; pr
   return res.json();
 }
 
+export async function lookupByPhone(phone: string): Promise<{ success: boolean; project?: ProjectData; error?: string; message?: string }> {
+  const res = await fetch(`${API_BASE}/lookup/phone/${encodeURIComponent(phone)}`);
+  return res.json();
+}
+
+export async function fetchDashboard(): Promise<{ success: boolean; projects?: any[] }> {
+  const res = await fetch(`${API_BASE}/dashboard`);
+  return res.json();
+}
+
 export async function saveProgress(code: string, formData: any): Promise<{ success: boolean }> {
   const res = await fetch(`${API_BASE}/project/${encodeURIComponent(code)}/save`, {
     method: 'POST',
@@ -27,7 +37,7 @@ export async function submitForm(code: string, formData: any, source: string): P
 
 export async function extractDocument(
   imageBase64: string,
-  documentType: 'ibi' | 'electricity'
+  documentType: 'ibi' | 'electricity' | 'dniFront' | 'dniBack'
 ): Promise<{
   success: boolean;
   extraction: any;

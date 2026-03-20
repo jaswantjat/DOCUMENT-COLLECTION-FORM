@@ -13,34 +13,22 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || 'sk-or-v1-5f9fae71d
 const OPENROUTER_MODEL = 'google/gemini-3.1-flash-lite-preview';
 
 // Middleware
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization'] }));
 app.use(express.json({ limit: '25mb' }));
 app.use(express.static('uploads'));
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: 'Backend is running', timestamp: new Date().toISOString() });
-});
-
 // Uploads directory
 const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-// Multer config
+// Multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}_${uuidv4().slice(0,8)}${ext}`);
+    cb(null, `${Date.now()}_${uuidv4().slice(0, 8)}${ext}`);
   }
 });
-
 const upload = multer({
   storage,
   limits: { fileSize: 20 * 1024 * 1024 },
@@ -51,13 +39,13 @@ const upload = multer({
   }
 });
 
-// Mock database
+// ── Mock Database ──────────────────────────────────────────────────────────────
 const mockDatabase = {
   projects: {
     'ELT20250001': {
       code: 'ELT20250001',
       customerName: 'María García López',
-      phone: '+34 612 345 678',
+      phone: '+34612345678',
       email: 'maria.garcia@email.com',
       productType: 'solar',
       assessor: 'Carlos Ruiz',
@@ -70,7 +58,7 @@ const mockDatabase = {
     'ELT20250002': {
       code: 'ELT20250002',
       customerName: 'Juan Pérez Martínez',
-      phone: '+34 623 456 789',
+      phone: '+34623456789',
       email: 'juan.perez@email.com',
       productType: 'aerothermal',
       assessor: 'Ana López',
@@ -83,7 +71,7 @@ const mockDatabase = {
     'ELT20250003': {
       code: 'ELT20250003',
       customerName: 'Laura Fernández Ruiz',
-      phone: '+34 655 443 322',
+      phone: '+34655443322',
       email: 'laura.fernandez@email.com',
       productType: 'solar',
       assessor: 'Pedro Sánchez',
@@ -96,41 +84,45 @@ const mockDatabase = {
   }
 };
 
-// ======== API ROUTES ========
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function normalizePhone(p) {
+  return p.replace(/[\s\-().]/g, '').replace(/^0034/, '+34').replace(/^(?=\d{9}$)/, '+34').replace(/^34(?=\d{9}$)/, '+34');
+}
 
-// Get project
+// ── Routes ─────────────────────────────────────────────────────────────────────
+
+app.get('/api/health', (req, res) => {
+  res.json({ success: true, message: 'Backend is running', timestamp: new Date().toISOString() });
+});
+
+// Get project by code
 app.get('/api/project/:code', (req, res) => {
   const project = mockDatabase.projects[req.params.code];
-  if (!project) {
-    return res.status(404).json({
-      success: false,
-      error: 'PROJECT_NOT_FOUND',
-      message: 'Este enlace no es válido. Contacta con tu asesor de Eltex.'
-    });
-  }
+  if (!project) return res.status(404).json({ success: false, error: 'PROJECT_NOT_FOUND', message: 'Este enlace no es válido. Contacta con tu asesor de Eltex.' });
   res.json({ success: true, project });
 });
 
-// Save partial form data (auto-save)
+// Look up project by phone number
+app.get('/api/lookup/phone/:phone', (req, res) => {
+  const needle = normalizePhone(decodeURIComponent(req.params.phone));
+  const project = Object.values(mockDatabase.projects).find(p => normalizePhone(p.phone) === needle);
+  if (!project) return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'No encontramos ningún proyecto con ese teléfono. Contacta con tu asesor.' });
+  res.json({ success: true, project });
+});
+
+// Auto-save progress
 app.post('/api/project/:code/save', (req, res) => {
   const project = mockDatabase.projects[req.params.code];
-  if (!project) {
-    return res.status(404).json({ success: false, error: 'PROJECT_NOT_FOUND' });
-  }
-
+  if (!project) return res.status(404).json({ success: false, error: 'PROJECT_NOT_FOUND' });
   project.formData = req.body.formData;
   project.lastActivity = new Date().toISOString();
-
   res.json({ success: true, message: 'Progreso guardado.' });
 });
 
 // Final submit
 app.post('/api/project/:code/submit', (req, res) => {
   const project = mockDatabase.projects[req.params.code];
-  if (!project) {
-    return res.status(404).json({ success: false, error: 'PROJECT_NOT_FOUND' });
-  }
-
+  if (!project) return res.status(404).json({ success: false, error: 'PROJECT_NOT_FOUND' });
   const submission = {
     id: uuidv4(),
     timestamp: new Date().toISOString(),
@@ -138,189 +130,150 @@ app.post('/api/project/:code/submit', (req, res) => {
     ipAddress: req.ip,
     formData: req.body.formData
   };
-
   project.submissions.push(submission);
   project.formData = req.body.formData;
   project.lastActivity = new Date().toISOString();
-
-  res.json({
-    success: true,
-    message: 'Documentación enviada correctamente.',
-    submissionId: submission.id
-  });
+  res.json({ success: true, message: 'Documentación enviada correctamente.', submissionId: submission.id });
 });
 
 // Upload file
 app.post('/api/upload', upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ success: false, message: 'No se recibió archivo.' });
-  }
-
+  if (!req.file) return res.status(400).json({ success: false, message: 'No se recibió archivo.' });
   const fileUrl = `/uploads/${req.file.filename}`;
-  res.json({
-    success: true,
-    fileUrl,
-    filename: req.file.filename,
-    size: req.file.size,
-    mimetype: req.file.mimetype
-  });
+  res.json({ success: true, fileUrl, filename: req.file.filename, size: req.file.size, mimetype: req.file.mimetype });
 });
 
-// AI Document Extraction endpoint
+// ── Dashboard endpoint ─────────────────────────────────────────────────────────
+app.get('/api/dashboard', (req, res) => {
+  const projects = Object.values(mockDatabase.projects).map(p => ({
+    code: p.code,
+    customerName: p.customerName,
+    phone: p.phone,
+    email: p.email,
+    productType: p.productType,
+    assessor: p.assessor,
+    createdAt: p.createdAt,
+    lastActivity: p.lastActivity,
+    submissionCount: p.submissions.length,
+    latestSubmission: p.submissions.length > 0 ? p.submissions[p.submissions.length - 1] : null,
+    formData: p.formData,
+  }));
+  res.json({ success: true, projects });
+});
+
+// ── AI Document Extraction ─────────────────────────────────────────────────────
+const PROMPTS = {
+  ibi: `You are analyzing a Spanish IBI (Impuesto sobre Bienes Inmuebles) receipt or Escritura document.
+Extract:
+1. Referencia Catastral (cadastral reference) — 20-char alphanumeric code
+2. Titular (property owner name)
+3. Dirección del inmueble (full property address)
+Respond ONLY in this exact JSON (no markdown):
+{"isCorrectDocument":true,"documentTypeDetected":"IBI receipt","isReadable":true,"extractedData":{"referenciaCatastral":"string or null","titular":"string or null","direccion":"string or null"},"confidence":0.85,"notes":"string"}`,
+
+  electricity: `You are analyzing a Spanish electricity bill (factura de electricidad).
+Extract:
+1. CUPS number (starts with "ES", 20-22 chars)
+2. Potencia contratada (contracted power in kW, as a number)
+3. Tipo de fase: "monofasica" or "trifasica"
+4. Supply address (dirección del suministro)
+Respond ONLY in this exact JSON (no markdown):
+{"isCorrectDocument":true,"documentTypeDetected":"electricity bill","isReadable":true,"extractedData":{"cups":"string or null","potenciaContratada":null,"tipoFase":"monofasica or trifasica or null","direccionSuministro":"string or null"},"confidence":0.85,"notes":"string"}`,
+
+  dniFront: `You are analyzing the FRONT of a Spanish DNI (Documento Nacional de Identidad) or NIE card.
+Extract:
+1. Full name — apellidos followed by nombre as shown on card
+2. DNI/NIE number (the alphanumeric ID number, e.g. 12345678A or X1234567A)
+3. Date of birth (fecha de nacimiento) — format YYYY-MM-DD
+4. Date of expiry (válido hasta) — format YYYY-MM-DD
+5. Sex (M or F)
+Respond ONLY in this exact JSON (no markdown):
+{"isCorrectDocument":true,"documentTypeDetected":"DNI front","isReadable":true,"extractedData":{"fullName":"string or null","dniNumber":"string or null","dateOfBirth":"string or null","expiryDate":"string or null","sex":"M or F or null"},"confidence":0.85,"notes":"string"}`,
+
+  dniBack: `You are analyzing the BACK of a Spanish DNI (Documento Nacional de Identidad) card.
+Extract:
+1. Full address (domicilio) — street, number, floor, door
+2. Municipality (municipio/localidad)
+3. Province (provincia)
+4. Place of birth (lugar de nacimiento)
+Respond ONLY in this exact JSON (no markdown):
+{"isCorrectDocument":true,"documentTypeDetected":"DNI back","isReadable":true,"extractedData":{"address":"string or null","municipality":"string or null","province":"string or null","placeOfBirth":"string or null"},"confidence":0.85,"notes":"string"}`
+};
+
 app.post('/api/extract', async (req, res) => {
   const { imageBase64, documentType } = req.body;
+  if (!imageBase64 || !documentType) return res.status(400).json({ success: false, message: 'Faltan imageBase64 o documentType.' });
 
-  if (!imageBase64 || !documentType) {
-    return res.status(400).json({ success: false, message: 'Faltan imageBase64 o documentType.' });
-  }
-
-  const prompts = {
-    ibi: `You are analyzing a Spanish IBI (Impuesto sobre Bienes Inmuebles) receipt or Escritura document.
-Extract the following data from this document image:
-1. Referencia Catastral (cadastral reference) - a long alphanumeric code, usually 20 characters
-2. Titular (property owner name)
-3. Dirección del inmueble (property address)
-
-Also determine:
-- Is this actually an IBI receipt or Escritura? If it appears to be a different document type, say so.
-- Is the image clear enough to read?
-
-Respond ONLY in this exact JSON format, no markdown:
-{"isCorrectDocument": true, "documentTypeDetected": "IBI receipt", "isReadable": true, "extractedData": {"referenciaCatastral": "string or null", "titular": "string or null", "direccion": "string or null"}, "confidence": 0.0-1.0, "notes": "string"}`,
-
-    electricity: `You are analyzing a Spanish electricity bill (factura de electricidad).
-Extract the following data from this document image:
-1. CUPS number (starts with "ES", 20-22 characters)
-2. Potencia contratada (contracted power in kW)
-3. Tipo de instalación: Monofásica or Trifásica (phase type)
-
-Also determine:
-- Is this actually an electricity bill? If it looks like a gas bill or other utility bill, say so.
-- Is the image clear enough to read?
-
-Respond ONLY in this exact JSON format, no markdown:
-{"isCorrectDocument": true, "documentTypeDetected": "electricity bill", "isReadable": true, "extractedData": {"cups": "string or null", "potenciaContratada": null, "tipoFase": "monofasica or trifasica or null"}, "confidence": 0.0-1.0, "notes": "string"}`
-  };
-
-  const prompt = prompts[documentType];
-  if (!prompt) {
-    return res.status(400).json({ success: false, message: 'Tipo de documento no soportado.' });
-  }
+  const prompt = PROMPTS[documentType];
+  if (!prompt) return res.status(400).json({ success: false, message: `Tipo de documento no soportado: ${documentType}` });
 
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENROUTER_API_KEY}` },
       body: JSON.stringify({
         model: OPENROUTER_MODEL,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              {
-                type: 'image_url',
-                image_url: { url: imageBase64.startsWith('data:') ? imageBase64 : `data:image/jpeg;base64,${imageBase64}` }
-              }
-            ]
-          }
-        ],
-        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: imageBase64.startsWith('data:') ? imageBase64 : `data:image/jpeg;base64,${imageBase64}` } }
+          ]
+        }],
+        max_tokens: 800,
         temperature: 0.1
       })
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenRouter error:', response.status, errorText);
-      return res.json({
-        success: true,
-        extraction: null,
-        needsManualReview: true,
-        message: 'No se pudo analizar el documento automáticamente. Se marcará para revisión manual.'
-      });
+      const errText = await response.text();
+      console.error('OpenRouter error:', response.status, errText);
+      return res.json({ success: true, extraction: null, needsManualReview: true, message: 'No se pudo analizar automáticamente.' });
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '';
+    console.log(`[extract:${documentType}] AI response:`, content.slice(0, 300));
 
     let extraction;
     try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      extraction = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+      const m = content.match(/\{[\s\S]*\}/);
+      extraction = m ? JSON.parse(m[0]) : null;
     } catch (e) {
-      console.error('Failed to parse AI response:', content);
+      console.error('JSON parse error:', e.message);
       extraction = null;
     }
 
-    if (!extraction) {
-      return res.json({
-        success: true,
-        extraction: null,
-        needsManualReview: true,
-        message: 'No se pudo extraer los datos. Se marcará para revisión manual.'
-      });
-    }
+    if (!extraction) return res.json({ success: true, extraction: null, needsManualReview: true, message: 'No se pudieron extraer los datos.' });
 
     if (!extraction.isCorrectDocument) {
       return res.json({
-        success: true,
-        extraction,
-        isWrongDocument: true,
-        message: documentType === 'electricity'
-          ? `Esto parece ser un/a ${extraction.documentTypeDetected || 'otro documento'}. Por favor, sube tu factura de electricidad.`
-          : `Esto parece ser un/a ${extraction.documentTypeDetected || 'otro documento'}. Por favor, sube tu recibo de IBI o escritura.`
+        success: true, extraction, isWrongDocument: true,
+        message: `Esto parece ser ${extraction.documentTypeDetected || 'otro documento'}. Por favor sube el documento correcto.`
       });
     }
 
+    // CUPS validation
     if (documentType === 'electricity' && extraction.extractedData?.cups) {
       const cups = extraction.extractedData.cups;
-      if (!cups.startsWith('ES') || cups.length < 20 || cups.length > 22) {
-        extraction.extractedData.cupsWarning = 'El CUPS no tiene el formato esperado (ES + 20-22 caracteres).';
-      }
-      const power = extraction.extractedData?.potenciaContratada;
-      if (power && (power < 1 || power > 50)) {
-        extraction.extractedData.powerWarning = 'La potencia contratada parece inusual.';
-      }
+      if (!cups.startsWith('ES') || cups.length < 20 || cups.length > 22)
+        extraction.extractedData.cupsWarning = 'El CUPS no tiene el formato esperado.';
     }
 
     res.json({
-      success: true,
-      extraction,
+      success: true, extraction,
       needsManualReview: extraction.confidence < 0.6,
-      message: extraction.confidence >= 0.6
-        ? 'Datos extraídos correctamente.'
-        : 'Los datos extraídos tienen baja confianza. Por favor, verifica manualmente.'
+      message: extraction.confidence >= 0.6 ? 'Datos extraídos correctamente.' : 'Confianza baja — verifica manualmente.'
     });
 
   } catch (err) {
     console.error('AI extraction error:', err);
-    res.json({
-      success: true,
-      extraction: null,
-      needsManualReview: true,
-      message: 'Error en el análisis. Se marcará para revisión manual.'
-    });
+    res.json({ success: true, extraction: null, needsManualReview: true, message: 'Error en el análisis. Se revisará manualmente.' });
   }
-});
-
-// Get project status
-app.get('/api/status/:code', (req, res) => {
-  const project = mockDatabase.projects[req.params.code];
-  if (!project) return res.status(404).json({ success: false });
-  res.json({ success: true, project });
-});
-
-// Send confirmation (mock)
-app.post('/api/send-confirmation', (req, res) => {
-  console.log('=== MOCK: Confirmation sent ===', req.body);
-  res.json({ success: true, message: 'Confirmación enviada.' });
 });
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
-  console.log(`Project codes: ELT20250001 (solar), ELT20250002 (aerothermal), ELT20250003 (solar)`);
+  console.log('Test codes: ELT20250001 (solar) | ELT20250002 (aerothermal) | ELT20250003 (solar)');
+  console.log('Test phones: +34612345678 | +34623456789 | +34655443322');
 });

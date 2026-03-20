@@ -1,26 +1,15 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type {
-  FormData, FormErrors, CustomerIdentity, UploadedPhoto,
-  AIExtraction, ProductType, Section, FormItem
+  FormData, FormErrors, UploadedPhoto,
+  AIExtraction, ProductType, FormItem, DocSlot
 } from '@/types';
 import { saveProgress } from '@/services/api';
 
-const initialIdentity: CustomerIdentity = {
-  fullName: '',
-  dni: '',
-  phone: '',
-  email: '',
-  street: '',
-  number: '',
-  floor: '',
-  door: '',
-  postalCode: '',
-  municipality: '',
-  province: '',
-};
+const emptyDocSlot = (): DocSlot => ({ photo: null, extraction: null });
 
 export const initialFormData: FormData = {
-  identity: { ...initialIdentity },
+  phone: '',
+  dni: { front: emptyDocSlot(), back: emptyDocSlot() },
   ibi: { photo: null, extraction: null },
   electricityBill: { photo: null, extraction: null },
   electricalPanel: { photos: [] },
@@ -30,32 +19,42 @@ export const initialFormData: FormData = {
   signatures: { customerSignature: null, repSignature: null },
 };
 
-// Define all form items for progress tracking
 export function getFormItems(productType: ProductType): FormItem[] {
   const items: FormItem[] = [
     {
-      id: 'identity',
-      label: 'Datos personales',
-      section: 'identity',
+      id: 'phone',
+      label: 'Teléfono de contacto',
+      section: 'phone',
       required: true,
-      isComplete: (fd) => {
-        const i = fd.identity;
-        return !!(i.fullName && i.dni && i.phone && i.email && i.street && i.number && i.postalCode && i.municipality && i.province);
-      },
+      isComplete: (fd) => fd.phone.trim().length >= 9,
+    },
+    {
+      id: 'dniFront',
+      label: 'DNI — Cara frontal',
+      section: 'property-docs',
+      required: false,
+      isComplete: (fd) => !!fd.dni.front.photo,
+    },
+    {
+      id: 'dniBack',
+      label: 'DNI — Cara trasera',
+      section: 'property-docs',
+      required: false,
+      isComplete: (fd) => !!fd.dni.back.photo,
     },
     {
       id: 'ibi',
       label: 'IBI / Escritura',
       section: 'property-docs',
       required: false,
-      isComplete: (fd) => !!(fd.ibi.photo),
+      isComplete: (fd) => !!fd.ibi.photo,
     },
     {
       id: 'electricity',
       label: 'Factura de luz',
       section: 'property-docs',
       required: false,
-      isComplete: (fd) => !!(fd.electricityBill.photo),
+      isComplete: (fd) => !!fd.electricityBill.photo,
     },
     {
       id: 'electricalPanel',
@@ -114,137 +113,88 @@ export const useFormState = (projectCode: string | null, productType: ProductTyp
   // Auto-save with debounce
   useEffect(() => {
     if (!projectCode) return;
-
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      // Strip File objects before saving (not serializable)
       const cleanData = JSON.parse(JSON.stringify(formData, (key, value) => {
         if (value instanceof File) return undefined;
         return value;
       }));
       saveProgress(projectCode, cleanData).catch(() => {});
     }, 2000);
-
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, [formData, projectCode]);
 
-  const updateIdentity = useCallback((field: keyof CustomerIdentity, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      identity: { ...prev.identity, [field]: value },
-    }));
-    setErrors(prev => ({ ...prev, [`identity.${field}`]: undefined }));
+  const setPhone = useCallback((phone: string) => {
+    setFormData(prev => ({ ...prev, phone }));
+    setErrors(prev => ({ ...prev, phone: undefined }));
   }, []);
 
+  // DNI
+  const setDNIFrontPhoto = useCallback((photo: UploadedPhoto | null) => {
+    setFormData(prev => ({ ...prev, dni: { ...prev.dni, front: { photo, extraction: photo ? prev.dni.front.extraction : null } } }));
+  }, []);
+  const setDNIFrontExtraction = useCallback((extraction: AIExtraction | null) => {
+    setFormData(prev => ({ ...prev, dni: { ...prev.dni, front: { ...prev.dni.front, extraction } } }));
+  }, []);
+  const setDNIBackPhoto = useCallback((photo: UploadedPhoto | null) => {
+    setFormData(prev => ({ ...prev, dni: { ...prev.dni, back: { photo, extraction: photo ? prev.dni.back.extraction : null } } }));
+  }, []);
+  const setDNIBackExtraction = useCallback((extraction: AIExtraction | null) => {
+    setFormData(prev => ({ ...prev, dni: { ...prev.dni, back: { ...prev.dni.back, extraction } } }));
+  }, []);
+
+  // IBI
   const setIBIPhoto = useCallback((photo: UploadedPhoto | null) => {
-    setFormData(prev => ({
-      ...prev,
-      ibi: { ...prev.ibi, photo, extraction: photo ? prev.ibi.extraction : null },
-    }));
+    setFormData(prev => ({ ...prev, ibi: { ...prev.ibi, photo, extraction: photo ? prev.ibi.extraction : null } }));
   }, []);
-
   const setIBIExtraction = useCallback((extraction: AIExtraction | null) => {
-    setFormData(prev => ({
-      ...prev,
-      ibi: { ...prev.ibi, extraction },
-    }));
+    setFormData(prev => ({ ...prev, ibi: { ...prev.ibi, extraction } }));
   }, []);
 
+  // Electricity
   const setElectricityPhoto = useCallback((photo: UploadedPhoto | null) => {
-    setFormData(prev => ({
-      ...prev,
-      electricityBill: { ...prev.electricityBill, photo, extraction: photo ? prev.electricityBill.extraction : null },
-    }));
+    setFormData(prev => ({ ...prev, electricityBill: { ...prev.electricityBill, photo, extraction: photo ? prev.electricityBill.extraction : null } }));
   }, []);
-
   const setElectricityExtraction = useCallback((extraction: AIExtraction | null) => {
-    setFormData(prev => ({
-      ...prev,
-      electricityBill: { ...prev.electricityBill, extraction },
-    }));
+    setFormData(prev => ({ ...prev, electricityBill: { ...prev.electricityBill, extraction } }));
   }, []);
 
+  // Photos
   const setElectricalPanelPhotos = useCallback((photos: UploadedPhoto[]) => {
-    setFormData(prev => ({
-      ...prev,
-      electricalPanel: { photos },
-    }));
+    setFormData(prev => ({ ...prev, electricalPanel: { photos } }));
   }, []);
-
   const updateInstallationSpace = useCallback((field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      installationSpace: { ...prev.installationSpace, [field]: value },
-    }));
+    setFormData(prev => ({ ...prev, installationSpace: { ...prev.installationSpace, [field]: value } }));
   }, []);
-
   const updateRoof = useCallback((field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      roof: { ...prev.roof, [field]: value },
-    }));
+    setFormData(prev => ({ ...prev, roof: { ...prev.roof, [field]: value } }));
   }, []);
-
   const updateRadiators = useCallback((field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      radiators: { ...prev.radiators, [field]: value },
-    }));
+    setFormData(prev => ({ ...prev, radiators: { ...prev.radiators, [field]: value } }));
   }, []);
 
+  // Signatures
   const setCustomerSignature = useCallback((sig: string | null) => {
-    setFormData(prev => ({
-      ...prev,
-      signatures: { ...prev.signatures, customerSignature: sig },
-    }));
+    setFormData(prev => ({ ...prev, signatures: { ...prev.signatures, customerSignature: sig } }));
   }, []);
-
   const setRepSignature = useCallback((sig: string | null) => {
-    setFormData(prev => ({
-      ...prev,
-      signatures: { ...prev.signatures, repSignature: sig },
-    }));
+    setFormData(prev => ({ ...prev, signatures: { ...prev.signatures, repSignature: sig } }));
   }, []);
 
   // Validators
-  const validateIdentity = useCallback((): boolean => {
+  const validatePhone = useCallback((): boolean => {
     const e: FormErrors = {};
-    const i = formData.identity;
-
-    if (!i.fullName.trim()) e['identity.fullName'] = 'Nombre completo obligatorio';
-    if (!i.dni.trim()) {
-      e['identity.dni'] = 'DNI/NIE obligatorio';
-    } else {
-      const dniRe = /^[0-9]{8}[A-Z]$/i;
-      const nieRe = /^[XYZ][0-9]{7}[A-Z]$/i;
-      if (!dniRe.test(i.dni.trim()) && !nieRe.test(i.dni.trim())) {
-        e['identity.dni'] = 'Formato DNI (12345678A) o NIE (X1234567A)';
-      }
+    const phone = formData.phone.trim();
+    if (!phone) {
+      e.phone = 'El teléfono es obligatorio';
+    } else if (phone.replace(/\s/g, '').length < 9) {
+      e.phone = 'Introduce un número de teléfono válido';
     }
-    if (!i.phone.trim()) {
-      e['identity.phone'] = 'Teléfono obligatorio';
-    } else if (!/^(\+34)?[6-9][0-9]{8}$/.test(i.phone.replace(/\s/g, ''))) {
-      e['identity.phone'] = 'Formato de teléfono español no válido';
-    }
-    if (!i.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(i.email)) {
-      e['identity.email'] = 'Email válido obligatorio';
-    }
-    if (!i.street.trim()) e['identity.street'] = 'Calle obligatoria';
-    if (!i.number.trim()) e['identity.number'] = 'Número obligatorio';
-    if (!i.postalCode.trim()) {
-      e['identity.postalCode'] = 'Código postal obligatorio';
-    } else if (!/^[0-9]{5}$/.test(i.postalCode.trim())) {
-      e['identity.postalCode'] = 'Código postal: 5 dígitos';
-    }
-    if (!i.municipality.trim()) e['identity.municipality'] = 'Municipio obligatorio';
-    if (!i.province.trim()) e['identity.province'] = 'Provincia obligatoria';
-
     setErrors(e);
     return Object.keys(e).length === 0;
-  }, [formData.identity]);
+  }, [formData.phone]);
 
   const validatePropertyDocs = useCallback((): boolean => {
-    // Documents are optional — always allow continuing
     setErrors({});
     return true;
   }, []);
@@ -257,24 +207,16 @@ export const useFormState = (projectCode: string | null, productType: ProductTyp
     return Object.keys(e).length === 0;
   }, [formData.signatures]);
 
-  const getProgress = useCallback((): { completed: number; total: number; percent: number } => {
+  const getProgress = useCallback(() => {
     const items = getFormItems(productType);
     const completed = items.filter(item => item.isComplete(formData, productType)).length;
-    return {
-      completed,
-      total: items.length,
-      percent: Math.round((completed / items.length) * 100),
-    };
+    return { completed, total: items.length, percent: Math.round((completed / items.length) * 100) };
   }, [formData, productType]);
 
   const canSubmit = useCallback((): boolean => {
     const items = getFormItems(productType);
     return items.filter(i => i.required).every(i => i.isComplete(formData, productType));
   }, [formData, productType]);
-
-  const clearError = useCallback((key: string) => {
-    setErrors(prev => ({ ...prev, [key]: undefined }));
-  }, []);
 
   const restoreFormData = useCallback((data: FormData) => {
     setFormData(data);
@@ -283,24 +225,16 @@ export const useFormState = (projectCode: string | null, productType: ProductTyp
   return {
     formData,
     errors,
-    updateIdentity,
-    setIBIPhoto,
-    setIBIExtraction,
-    setElectricityPhoto,
-    setElectricityExtraction,
+    setPhone,
+    setDNIFrontPhoto, setDNIFrontExtraction,
+    setDNIBackPhoto, setDNIBackExtraction,
+    setIBIPhoto, setIBIExtraction,
+    setElectricityPhoto, setElectricityExtraction,
     setElectricalPanelPhotos,
-    updateInstallationSpace,
-    updateRoof,
-    updateRadiators,
-    setCustomerSignature,
-    setRepSignature,
-    validateIdentity,
-    validatePropertyDocs,
-    validateSignatures,
-    getProgress,
-    canSubmit,
-    clearError,
-    setErrors,
-    restoreFormData,
+    updateInstallationSpace, updateRoof, updateRadiators,
+    setCustomerSignature, setRepSignature,
+    validatePhone, validatePropertyDocs, validateSignatures,
+    getProgress, canSubmit,
+    setErrors, restoreFormData,
   };
 };

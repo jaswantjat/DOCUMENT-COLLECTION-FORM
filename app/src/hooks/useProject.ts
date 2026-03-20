@@ -4,13 +4,14 @@ import { fetchProject } from '@/services/api';
 
 export const useProject = (projectCode: string | null) => {
   const [project, setProject] = useState<ProjectData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!projectCode);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!projectCode) {
-      setError('INVALID_CODE');
+      // No code yet — waiting for phone lookup to provide project
       setLoading(false);
+      setError(null);
       return;
     }
 
@@ -29,5 +30,5 @@ export const useProject = (projectCode: string | null) => {
       .finally(() => setLoading(false));
   }, [projectCode]);
 
-  return { project, loading, error };
+  return { project, loading, error, setProject };
 };

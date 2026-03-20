@@ -202,18 +202,30 @@ export function SignaturesSection({
         {/* Legal text */}
         <div className="form-card p-5">
           <p className="text-xs text-gray-600 leading-relaxed">
-            En <strong>{today}</strong>, yo, <strong>{formData.identity.fullName || 'el/la titular'}</strong>,
-            con DNI/NIE <strong>{formData.identity.dni || '—'}</strong>, domiciliado/a en{' '}
-            <strong>{formData.identity.street ? `${formData.identity.street} ${formData.identity.number}, ${formData.identity.municipality}` : 'la dirección indicada'}</strong>,
-            autorizo a Eltex a tramitar el expediente de instalación (Ref. <strong>{project.code}</strong>) y
-            declaro que los documentos aportados son verídicos y están en vigor.
+            {(() => {
+              const dniExtract = formData.dni?.front?.extraction?.extractedData;
+              const dniBackExtract = formData.dni?.back?.extraction?.extractedData;
+              const name = dniExtract?.fullName || project.customerName || 'el/la titular';
+              const dniNum = dniExtract?.dniNumber || '—';
+              const address = dniBackExtract?.address
+                ? `${dniBackExtract.address}, ${dniBackExtract.municipality || ''}`
+                : 'la dirección indicada';
+              return (
+                <>
+                  En <strong>{today}</strong>, yo, <strong>{name}</strong>,
+                  con DNI/NIE <strong>{dniNum}</strong>, domiciliado/a en <strong>{address}</strong>,
+                  autorizo a Eltex a tramitar el expediente de instalación (Ref.{' '}
+                  <strong>{project.code}</strong>) y declaro que los documentos aportados son verídicos y están en vigor.
+                </>
+              );
+            })()}
           </p>
         </div>
 
         {/* Customer signature */}
         <SignaturePad
           label="Firma del cliente"
-          subtitle={`${formData.identity.fullName || 'Titular del proyecto'}`}
+          subtitle={formData.dni?.front?.extraction?.extractedData?.fullName || project.customerName || 'Titular del proyecto'}
           value={formData.signatures.customerSignature}
           error={errors['signatures.customer']}
           onChange={onCustomerSignature}
